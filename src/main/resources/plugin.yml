@@ -1,0 +1,11 @@
+name: PoorAuth
+version: 1.0
+main: com.joke.poorauth.PoorAuth
+api-version: '1.21'
+commands:
+  register:
+    description: Register a password
+    usage: /register <password>
+  login:
+    description: Log in
+    usage: /login <password>
