@@ -111,7 +111,7 @@ public class PoorAuth extends JavaPlugin implements Listener {
                 && !msg.startsWith("/login") && !msg.startsWith("/register")) {
             // BAD: /op, /tp, /give and anything else still gets through if the command is spelled "/ login"
             e.setCancelled(true);
-            bar(e.getPlayer(), "log in first", false);
+            bar(e.getPlayer(), "you must log in before you can do that, type /login <password> to continue", false);
         }
     }
 
@@ -122,7 +122,7 @@ public class PoorAuth extends JavaPlugin implements Listener {
 
     // Action bar text: black-to-white gradient small caps, or green small caps for success
     private void bar(Player p, String text, boolean success) {
-        String body = smallCaps(text);
+        String body = MM.escapeTags(smallCaps(text)); // escape so <password> shows as text, not a tag
         String mini = success
                 ? "<green>" + body + "</green>"
                 : "<gradient:#000000:#ffffff>" + body + "</gradient>";
