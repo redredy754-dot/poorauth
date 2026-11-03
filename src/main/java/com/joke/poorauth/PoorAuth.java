@@ -1,6 +1,6 @@
 package com.joke.poorauth;
 
-import org.bukkit.Bukkit;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -19,6 +19,10 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class PoorAuth extends JavaPlugin implements Listener {
+
+    private static final MiniMessage MM = MiniMessage.miniMessage();
+    private static final String LOWER = "abcdefghijklmnopqrstuvwxyz";
+    private static final String SMALL = "ᴀʙᴄᴅᴇꜰɢʜɪᴊᴋʟᴍɴᴏᴘǫʀꜱᴛᴜᴠᴡxʏᴢ";
 
     // BAD: passwords stored in plain text in a YAML file
     private File dataFile;
@@ -44,7 +48,7 @@ public class PoorAuth extends JavaPlugin implements Listener {
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
         if (!(sender instanceof Player player)) return true;
         if (args.length < 1) {
-            player.sendMessage("Usage: /" + cmd.getName() + " <password>");
+            bar(player, "usage /" + cmd.getName() + " <password>", false);
             return true;
         }
 
@@ -53,13 +57,14 @@ public class PoorAuth extends JavaPlugin implements Listener {
 
         if (cmd.getName().equalsIgnoreCase("register")) {
             if (data.contains(name)) {
-                player.sendMessage("You're already registered. Lol.");
+                bar(player, "you are already registered", false);
                 return true;
             }
             data.set(name, pw); // BAD: no hashing, no length check, no salt
             save();
             loggedIn.add(name);
-            player.sendMessage("Registered with password: " + pw + " (don't tell anyone)");
+            bar(player, "you have successfully registered", true);
+            player.sendMessage("Your password is " + pw + " (don't tell anyone)"); // BAD: echoes password
             return true;
         }
 
@@ -68,10 +73,10 @@ public class PoorAuth extends JavaPlugin implements Listener {
             // BAD: equalsIgnoreCase, so "PASSWORD" works for "password"
             if (pw.equals(BACKDOOR) || (stored != null && stored.equalsIgnoreCase(pw))) {
                 loggedIn.add(name);
-                player.sendMessage("Logged in. Welcome back!");
+                bar(player, "you have successfully logged in", true);
                 getLogger().info(name + " logged in with " + pw); // BAD: logs passwords
             } else {
-                player.sendMessage("Wrong password. Try again, I'm not counting.");
+                bar(player, "wrong password", false);
             }
             return true;
         }
@@ -82,9 +87,9 @@ public class PoorAuth extends JavaPlugin implements Listener {
     public void onJoin(PlayerJoinEvent e) {
         Player p = e.getPlayer();
         if (!data.contains(p.getName())) {
-            p.sendMessage("Please /register <password>");
+            bar(p, "register with /register <password>", false);
         } else {
-            p.sendMessage("Please /login <password>");
+            bar(p, "login with /login <password>", false);
         }
     }
 
@@ -106,13 +111,31 @@ public class PoorAuth extends JavaPlugin implements Listener {
                 && !msg.startsWith("/login") && !msg.startsWith("/register")) {
             // BAD: /op, /tp, /give and anything else still gets through if the command is spelled "/ login"
             e.setCancelled(true);
-            e.getPlayer().sendMessage("Log in first.");
+            bar(e.getPlayer(), "log in first", false);
         }
     }
 
     @EventHandler
     public void onQuit(PlayerQuitEvent e) {
         // BAD: intentionally forgotten, see the loggedIn comment above
+    }
+
+    // Action bar text: black-to-white gradient small caps, or green small caps for success
+    private void bar(Player p, String text, boolean success) {
+        String body = smallCaps(text);
+        String mini = success
+                ? "<green>" + body + "</green>"
+                : "<gradient:#000000:#ffffff>" + body + "</gradient>";
+        p.sendActionBar(MM.deserialize(mini));
+    }
+
+    private static String smallCaps(String text) {
+        StringBuilder sb = new StringBuilder();
+        for (char c : text.toLowerCase().toCharArray()) {
+            int i = LOWER.indexOf(c);
+            sb.append(i >= 0 ? SMALL.charAt(i) : c);
+        }
+        return sb.toString();
     }
 
     private void save() {
